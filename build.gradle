@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.9-SNAPSHOT'
+    id 'fabric-loom' version '1.10-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -38,7 +38,7 @@ repositories {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${stonecutter.current.version}"
+    minecraft "com.mojang:minecraft:${property('deps.minecraft')}"
     mappings "net.fabricmc:yarn:${property('deps.yarn')}:v2"
 
     modImplementation "net.fabricmc:fabric-loader:${property('deps.fabric_loader')}"
@@ -49,17 +49,14 @@ dependencies {
         exclude group: "net.fabricmc.fabric-api", module: "fabric-api"
     }
 
-    modImplementation ("dev.imb11:mru:${property("deps.mru")}+${stonecutter.current.version.replace("1.21.1", "1.21").replace("1.21.3", "1.21.4")}+fabric", {
+    modImplementation ("dev.imb11:mru:${property("deps.mru")}+fabric", {
         transitive = false
     })
 
     modRuntimeOnly modCompileOnly("com.terraformersmc:modmenu:${property('deps.modmenu')}")
-
-    if (stonecutter.eval(mcVersion, ">1.20.1")) {
-        modImplementation("maven.modrinth:serene-seasons:${property('deps.serene_seasons')}")
+    modCompileOnly("maven.modrinth:serene-seasons:${property('deps.serene_seasons')}")
 //        modImplementation("maven.modrinth:glitchcore:${property('deps.glitchcore')}")
 //        implementation 'net.jodah:typetools:0.4.2'
-    }
 }
 
 if (stonecutter.current.active) { // run configs for non-active version would be invalid

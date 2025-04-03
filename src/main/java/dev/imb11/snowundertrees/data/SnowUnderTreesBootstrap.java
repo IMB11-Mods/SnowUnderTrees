@@ -1,7 +1,6 @@
 //? >1.21.2 {
 package dev.imb11.snowundertrees.data;
 
-
 import dev.imb11.snowundertrees.world.SnowUnderTreesWorldgen;
 import net.minecraft.registry.Registerable;
 import net.minecraft.registry.RegistryKeys;
