@@ -1,0 +1,14 @@
+{
+  "modmenu.descriptionTranslation.snowundertrees": "Fügt Schnee unter Bäumen in verschneiten Biomen hinzu.",
+  "snowundertrees.config.title": "Snow Under Trees Einstellungen",
+  "snowundertrees.config.option.enableBiomeFeature": "Generierung aktivieren",
+  "snowundertrees.config.option.description.enableBiomeFeature": "Wenn deaktiviert, wird kein Schnee unter Bäumen generiert.",
+  "snowundertrees.config.option.enableWhenSnowing": "Generierung bei Schneefall",
+  "snowundertrees.config.option.description.enableWhenSnowing": "Wenn deaktiviert, wird unter Bäumen kein Schnee generiert, wenn es schneit.",
+  "snowundertrees.config.option.respectSeasonMods": "Jahreszeiten-Mods berücksichtigen",
+  "snowundertrees.config.option.description.respectSeasonMods": "Wenn aktiviert, berücksichtigt Schnee unter Bäumen Jahreszeiten-Mods – Schnee wird nur im Winter generiert.",
+  "snowundertrees.config.option.meltSnowSeasonally": "Schnee schmilzt saisonal",
+  "snowundertrees.config.option.description.meltSnowSeasonally": "Wenn aktiviert, schmilzt Schnee unter Bäumen im Frühling, Sommer und Herbst mit unterschiedlichen Schmelzraten je nach Jahreszeit.",
+  "snowundertrees.config.option.supportedBiomes": "Unterstützte Biome",
+  "snowundertrees.config.option.description.supportedBiomes": "Eine Liste der Biom-IDs, in denen Schnee unter Bäumen generiert wird.\n\nWenn ein Jahreszeiten-Mod installiert ist, prüft Schnee unter Bäumen zuerst, ob das Biom in der aktuellen Jahreszeit Schnee haben kann, zusätzlich zu den Biomen in dieser Liste."
+}

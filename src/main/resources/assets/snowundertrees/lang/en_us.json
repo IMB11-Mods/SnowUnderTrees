@@ -1,4 +1,5 @@
 {
+  "modmenu.descriptionTranslation.snowundertrees": "Adds snow under trees in snowy biomes.",
   "snowundertrees.config.title": "Snow Under Trees Config",
   "snowundertrees.config.option.enableBiomeFeature": "Enable Generation",
   "snowundertrees.config.option.description.enableBiomeFeature": "If disabled, no snow will be generated under trees.",
