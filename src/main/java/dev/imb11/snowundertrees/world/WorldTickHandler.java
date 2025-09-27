@@ -17,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 
 /*? if >1.20.4 {*/
@@ -36,7 +37,7 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
 
         ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) world.getChunkManager().chunkLoadingManager;
 
-        Iterable<ChunkHolder> chunkHolders = chunkStorage.invokeEntryIterator();
+        Iterable<ChunkHolder> chunkHolders = chunkStorage.invokeEntryIterator(ChunkStatus.EMPTY).toList();
         chunkHolders.forEach(chunkHolder -> processChunk(world, chunkHolder));
     }
 

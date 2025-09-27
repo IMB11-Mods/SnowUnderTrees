@@ -13,6 +13,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ public class SereneSeasonsEntrypoint {
 
         ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) serverWorld.getChunkManager().chunkLoadingManager;
 
-        for (ChunkHolder chunkHolder : chunkStorage.invokeEntryIterator()) {
+        for (ChunkHolder chunkHolder : chunkStorage.invokeEntryIterator(ChunkStatus.EMPTY).toList()) {
             var optionalChunk = chunkHolder.getTickingFuture().getNow(ChunkHolder.UNLOADED_WORLD_CHUNK);
 
             if (!optionalChunk.isPresent()) continue;
