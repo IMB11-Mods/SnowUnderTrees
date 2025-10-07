@@ -59,7 +59,10 @@ public class SereneSeasonsEntrypoint {
 
         ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) serverWorld.getChunkManager().chunkLoadingManager;
 
-        for (ChunkHolder chunkHolder : chunkStorage.invokeEntryIterator(ChunkStatus.EMPTY).toList()) {
+        for (ChunkHolder chunkHolder : chunkStorage.invokeEntryIterator(
+                //? if >1.21.8
+                ChunkStatus.EMPTY).toList(
+                )) {
             var optionalChunk = chunkHolder.getTickingFuture().getNow(ChunkHolder.UNLOADED_WORLD_CHUNK);
 
             if (!optionalChunk.isPresent()) continue;

@@ -7,7 +7,8 @@
   "authors": [
     "IMB11 (mineblock11)",
     "DeadlyMC",
-    "bl4ckscor3"
+    "bl4ckscor3",
+    "cassiancc"
   ],
   "contact": {
     "homepage": "https://IMB11.dev/",
@@ -35,7 +36,7 @@
     "snowundertrees.mixins.json"
   ],
   "depends": {
-    "fabric": "*",
+    "fabric-api": "*",
     "fabricloader": ">=${target_fabricloader}",
     "minecraft": "${target_minecraft}",
     "mru": "~${target_mru}"

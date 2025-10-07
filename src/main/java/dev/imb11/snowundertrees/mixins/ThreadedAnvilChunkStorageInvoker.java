@@ -9,6 +9,11 @@ import java.util.stream.Stream;
 
 @Mixin(net.minecraft.server.world.ServerChunkLoadingManager.class)
 public interface ThreadedAnvilChunkStorageInvoker {
+    //? if >1.21.8 {
     @Invoker("getChunkHolders")
     Stream<ChunkHolder> invokeEntryIterator(ChunkStatus status);
+    //?} else {
+    /*@Invoker("entryIterator")
+    Iterable<ChunkHolder> invokeEntryIterator();
+    *///?}
 }

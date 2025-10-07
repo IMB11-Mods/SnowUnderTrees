@@ -27,17 +27,21 @@ import net.minecraft.server.world.OptionalChunk;
 public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
     @Override
     public void onStartTick(ServerWorld world) {
-        if (!SnowUnderTreesConfig.get().enableBiomeFeature || !SnowUnderTreesConfig.get().enableWhenSnowing || !world.isRaining()) {
-            return;
-        }
 
         if(SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
             SereneSeasonsEntrypoint.attemptMeltSnow(world);
         }
 
+        if (!SnowUnderTreesConfig.get().enableBiomeFeature || !SnowUnderTreesConfig.get().enableWhenSnowing || !world.isRaining()) {
+            return;
+        }
+
         ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) world.getChunkManager().chunkLoadingManager;
 
-        Iterable<ChunkHolder> chunkHolders = chunkStorage.invokeEntryIterator(ChunkStatus.EMPTY).toList();
+        Iterable<ChunkHolder> chunkHolders = chunkStorage.invokeEntryIterator(
+                //? if >1.21.8
+                ChunkStatus.EMPTY).toList(
+                );
         chunkHolders.forEach(chunkHolder -> processChunk(world, chunkHolder));
     }
 
