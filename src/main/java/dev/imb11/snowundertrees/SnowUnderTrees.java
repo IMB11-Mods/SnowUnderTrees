@@ -6,13 +6,13 @@ import dev.imb11.snowundertrees.world.SnowUnderTreesWorldgen;
 import dev.imb11.snowundertrees.world.WorldTickHandler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 public class SnowUnderTrees implements ModInitializer {
 	public static final String MOD_ID = "snowundertrees";
 
-	public static Identifier id(String path) {
-		return Identifier.of(MOD_ID, path);
+	public static ResourceLocation id(String path) {
+		return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
 	}
 
 	@Override

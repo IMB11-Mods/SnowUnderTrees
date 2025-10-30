@@ -3,6 +3,7 @@ package dev.imb11.snowundertrees.config;
 import com.google.gson.GsonBuilder;
 import dev.imb11.mru.yacl.ConfigHelper;
 import dev.imb11.mru.yacl.EntryType;
+import dev.imb11.snowundertrees.SnowUnderTrees;
 import dev.imb11.snowundertrees.compat.SereneSeasonsEntrypoint;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.ListOption;
@@ -14,8 +15,7 @@ import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ public class SnowUnderTreesConfig {
     private static final ConfigHelper CONFIG_HELPER = new ConfigHelper("snowundertrees", "config");
     public static ConfigClassHandler<SnowUnderTreesConfig> CONFIG_CLASS_HANDLER = ConfigClassHandler
             .createBuilder(SnowUnderTreesConfig.class)
-            .id(Identifier.of("snowundertrees", "config"))
+            .id(SnowUnderTrees.id("config"))
             .serializer(config -> GsonConfigSerializerBuilder
                     .create(config)
                     .setPath(FabricLoader.getInstance().getConfigDir().resolve("snowundertrees.config.json"))
@@ -173,9 +173,9 @@ public class SnowUnderTreesConfig {
             }
 
             return builder
-                    .title(Text.translatable("snowundertrees.config.title"))
+                    .title(Component.translatable("snowundertrees.config.title"))
                     .category(ConfigCategory.createBuilder()
-                            .name(Text.translatable("snowundertrees.config.title"))
+                            .name(Component.translatable("snowundertrees.config.title"))
                             .options(options)
                             .group(supportedBiomesOption)
                             .build());

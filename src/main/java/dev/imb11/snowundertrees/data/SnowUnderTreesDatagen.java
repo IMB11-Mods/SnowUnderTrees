@@ -4,8 +4,8 @@ package dev.imb11.snowundertrees.data;
 import dev.imb11.snowundertrees.SnowUnderTrees;
 import net.fabricmc.fabric.api.datagen.v1.DataGeneratorEntrypoint;
 import net.fabricmc.fabric.api.datagen.v1.FabricDataGenerator;
-import net.minecraft.registry.RegistryBuilder;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.core.RegistrySetBuilder;
+import net.minecraft.core.registries.Registries;
 
 public class SnowUnderTreesDatagen implements DataGeneratorEntrypoint {
 
@@ -23,13 +23,13 @@ public class SnowUnderTreesDatagen implements DataGeneratorEntrypoint {
     /**
      * This method is called by the Fabric Datagen module to build registries.
      *
-     * @param registryBuilder a {@link RegistryBuilder} instance
+     * @param registryBuilder a {@link RegistrySetBuilder} instance
      */
     @Override
-    public void buildRegistry(RegistryBuilder registryBuilder) {
+    public void buildRegistry(RegistrySetBuilder registryBuilder) {
         // Add all the registries we want to generate data for here.
-        registryBuilder.addRegistry(RegistryKeys.CONFIGURED_FEATURE, SnowUnderTreesBootstrap::configuredFeatures);
-        registryBuilder.addRegistry(RegistryKeys.PLACED_FEATURE, SnowUnderTreesBootstrap::placedFeatures);
+        registryBuilder.add(Registries.CONFIGURED_FEATURE, SnowUnderTreesBootstrap::configuredFeatures);
+        registryBuilder.add(Registries.PLACED_FEATURE, SnowUnderTreesBootstrap::placedFeatures);
     }
 
     @Override

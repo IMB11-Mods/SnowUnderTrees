@@ -4,17 +4,17 @@ package dev.imb11.snowundertrees.compat;
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
 import dev.imb11.snowundertrees.mixins.ThreadedAnvilChunkStorageInvoker;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.SnowyBlock;
-import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.world.ChunkHolder;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public class SereneSeasonsEntrypoint {
     private static final Logger LOGGER = LoggerFactory.getLogger("SnowUnderTrees/SereneSeasons");
     public static boolean isSereneSeasonsLoaded = false;
 
-    public static boolean isBiomeSuitable(ServerWorld world, BlockPos biomeCheckPos) {
+    public static boolean isBiomeSuitable(ServerLevel world, BlockPos biomeCheckPos) {
         return SeasonHooks.coldEnoughToSnowSeasonal(world, biomeCheckPos
             //? if >=1.21.2 {
                 , world.getSeaLevel()
@@ -37,7 +37,7 @@ public class SereneSeasonsEntrypoint {
         );
     }
 
-    public static boolean isWarmEnoughToRainSeasonal(ServerWorld world, BlockPos pos) {
+    public static boolean isWarmEnoughToRainSeasonal(ServerLevel world, BlockPos pos) {
         return SeasonHooks.warmEnoughToRainSeasonal(world, pos
                 //? if >=1.21.2 {
                 , world.getSeaLevel()
@@ -53,47 +53,47 @@ public class SereneSeasonsEntrypoint {
         isSereneSeasonsLoaded = true;
     }
 
-    public static void attemptMeltSnow(ServerWorld serverWorld) {
+    public static void attemptMeltSnow(ServerLevel serverWorld) {
         if (isWinter(serverWorld) && !SnowUnderTreesConfig.get().meltSnowSeasonally) return;
         if (!shouldMeltSnow(serverWorld, SeasonHelper.getSeasonState(serverWorld).getSubSeason())) return;
 
-        ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) serverWorld.getChunkManager().chunkLoadingManager;
+        ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) serverWorld.getChunkSource().chunkMap;
 
         for (ChunkHolder chunkHolder : chunkStorage.invokeEntryIterator(
                 //? if >1.21.8
                 ChunkStatus.EMPTY).toList(
                 )) {
-            var optionalChunk = chunkHolder.getTickingFuture().getNow(ChunkHolder.UNLOADED_WORLD_CHUNK);
+            var optionalChunk = chunkHolder.getEntityTickingChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK);
 
-            if (!optionalChunk.isPresent()) continue;
-            WorldChunk chunk = optionalChunk.orElseThrow(() -> new IllegalStateException("Chunk is not present"));
+            if (!optionalChunk.isSuccess()) continue;
+            LevelChunk chunk = optionalChunk.orElseThrow(() -> new IllegalStateException("Chunk is not present"));
 
-            if (!serverWorld.shouldTickBlocksInChunk(chunk.getPos().toLong())) continue;
+            if (!serverWorld.shouldTickBlocksAt(chunk.getPos().toLong())) continue;
 
-            BlockPos randomPosition = serverWorld.getRandomPosInChunk(chunk.getPos().getStartX(), 0, chunk.getPos().getStartZ(), 15);
-            BlockPos heightmapPosition = serverWorld.getTopPosition(Heightmap.Type.MOTION_BLOCKING, randomPosition).down();
+            BlockPos randomPosition = serverWorld.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
+            BlockPos heightmapPosition = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, randomPosition).below();
             BlockState blockState = serverWorld.getBlockState(heightmapPosition);
-            if (!blockState.isIn(BlockTags.LEAVES)) {
+            if (!blockState.is(BlockTags.LEAVES)) {
                 continue;
             }
 
-            BlockPos pos = serverWorld.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, randomPosition);
+            BlockPos pos = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPosition);
             if (!isWarmEnoughToRainSeasonal(serverWorld, pos)) {
                 continue;
             }
 
             BlockState before = serverWorld.getBlockState(pos);
-            if (!before.isOf(Blocks.SNOW)) {
+            if (!before.is(Blocks.SNOW)) {
                 continue;
             }
 
-            serverWorld.setBlockState(pos, Blocks.AIR.getDefaultState());
+            serverWorld.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
 
-            BlockPos downPos = pos.down();
+            BlockPos downPos = pos.below();
             BlockState below = serverWorld.getBlockState(downPos);
 
-            if (below.contains(SnowyBlock.SNOWY)) {
-                serverWorld.setBlockState(downPos, below.with(SnowyBlock.SNOWY, false), 2);
+            if (below.hasProperty(SnowyDirtBlock.SNOWY)) {
+                serverWorld.setBlock(downPos, below.setValue(SnowyDirtBlock.SNOWY, false), 2);
             }
         }
     }
@@ -114,20 +114,20 @@ public class SereneSeasonsEntrypoint {
         }
     }
 
-    private static boolean shouldMeltSnow(ServerWorld world, Season.SubSeason subSeason) {
+    private static boolean shouldMeltSnow(ServerLevel world, Season.SubSeason subSeason) {
         int chance = MELT_CHANCES.getOrDefault(subSeason, -1);
         if (chance == -1) return false;
-        var rnd = world.random.nextBetween(0, chance);
+        var rnd = world.random.nextInt(0, chance);
         return rnd == 0;
     }
 
-    public static boolean isWinter(World world) {
+    public static boolean isWinter(Level world) {
         return SeasonHelper.getSeasonState(world).getSeason() == Season.WINTER;
     }
 
-    public static boolean shouldPlaceSnow(World world, BlockPos pos) {
+    public static boolean shouldPlaceSnow(Level world, BlockPos pos) {
         if (isSereneSeasonsLoaded) {
-            return ModConfig.seasons.generateSnowAndIce && isBiomeSuitable((ServerWorld) world, pos);
+            return ModConfig.seasons.generateSnowAndIce && isBiomeSuitable((ServerLevel) world, pos);
         } else {
             return false;
         }

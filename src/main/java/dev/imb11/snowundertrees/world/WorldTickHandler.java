@@ -4,29 +4,26 @@ import dev.imb11.snowundertrees.compat.SereneSeasonsEntrypoint;
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
 import dev.imb11.snowundertrees.mixins.ThreadedAnvilChunkStorageInvoker;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.block.SnowyBlock;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.world.ChunkHolder;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.Heightmap;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.WorldChunk;
-
-/*? if >1.20.4 {*/
-import net.minecraft.server.world.OptionalChunk;
-/*?}*/
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkResult;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
+import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
     @Override
-    public void onStartTick(ServerWorld world) {
+    public void onStartTick(ServerLevel world) {
 
         if(SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
             SereneSeasonsEntrypoint.attemptMeltSnow(world);
@@ -36,7 +33,7 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
             return;
         }
 
-        ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) world.getChunkManager().chunkLoadingManager;
+        ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
 
         Iterable<ChunkHolder> chunkHolders = chunkStorage.invokeEntryIterator(
                 //? if >1.21.8
@@ -45,11 +42,11 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
         chunkHolders.forEach(chunkHolder -> processChunk(world, chunkHolder));
     }
 
-    private void processChunk(ServerWorld world, ChunkHolder chunkHolder) {
-        OptionalChunk<WorldChunk> optionalChunk = chunkHolder.getEntityTickingFuture().getNow(ChunkHolder.UNLOADED_WORLD_CHUNK);
+    private void processChunk(ServerLevel world, ChunkHolder chunkHolder) {
+        ChunkResult<LevelChunk> optionalChunk = chunkHolder.getEntityTickingChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK);
 
-        if (optionalChunk.isPresent() && shouldProcessChunk(world)) {
-            WorldChunk chunk = optionalChunk.orElse(null);
+        if (optionalChunk.isSuccess() && shouldProcessChunk(world)) {
+            LevelChunk chunk = optionalChunk.orElse(null);
             if (chunk == null) {
                 return;
             }
@@ -61,7 +58,7 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
 
             BlockPos randomPos = findRandomSurfacePosition(world, chunk);
             if (randomPos != null) { // Guard in case no eligible surface position was found
-                BlockPos snowPlacementPos = world.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, randomPos);
+                BlockPos snowPlacementPos = world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPos);
 
                 if (canPlaceSnow(world, snowPlacementPos)) {
                     placeSnowLayers(world, snowPlacementPos);
@@ -70,23 +67,23 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
         }
     }
 
-    private boolean shouldProcessChunk(ServerWorld world) {
+    private boolean shouldProcessChunk(ServerLevel world) {
         return world.random.nextInt(4) == 0; // 25% chance for chunk processing
     }
 
-    public static boolean isBiomeSuitable(ServerWorld world, WorldChunk chunk) {
-        BlockPos biomeCheckPos = world.getRandomPosInChunk(chunk.getPos().getStartX(), 0, chunk.getPos().getStartZ(), 15);
+    public static boolean isBiomeSuitable(ServerLevel world, LevelChunk chunk) {
+        BlockPos biomeCheckPos = world.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
         Biome biome = world.getBiome(biomeCheckPos).value();
 
-        var registryManager = world.getRegistryManager();
+        var registryManager = world.registryAccess();
         Registry<Biome> biomeRegistry
         //? if <1.21.2 {
-        /*= registryManager.get(RegistryKeys.BIOME);
+        /*= registryManager.registryOrThrow(Registries.BIOME);
         *///?} else {
-        = registryManager.getOrThrow(RegistryKeys.BIOME);
+        = registryManager.lookupOrThrow(Registries.BIOME);
         //?}
 
-        Identifier biomeId = biomeRegistry.getKey(biome).get().getValue();
+        ResourceLocation biomeId = biomeRegistry.getResourceKey(biome).get().location();
 
         boolean isSupported = SnowUnderTreesConfig.get().supportedBiomes.contains(biomeId.toString());
 
@@ -98,25 +95,25 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
         return isSupported;
     }
 
-    private BlockPos findRandomSurfacePosition(ServerWorld world, WorldChunk chunk) {
-        BlockPos randomPos = world.getRandomPosInChunk(chunk.getPos().getStartX(), 0, chunk.getPos().getStartZ(), 15);
-        if (world.getBlockState(world.getTopPosition(Heightmap.Type.MOTION_BLOCKING, randomPos).down()).getBlock() instanceof LeavesBlock) {
+    private BlockPos findRandomSurfacePosition(ServerLevel world, LevelChunk chunk) {
+        BlockPos randomPos = world.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
+        if (world.getBlockState(world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, randomPos).below()).getBlock() instanceof LeavesBlock) {
             return randomPos;
         }
         return null; // Return null if we didn't find a suitable starting point
     }
 
-    private boolean canPlaceSnow(ServerWorld world, BlockPos pos) {
+    private boolean canPlaceSnow(ServerLevel world, BlockPos pos) {
         Biome biome = world.getBiome(pos).value();
-        return biome.canSetSnow(world, pos) && world.isAir(pos);
+        return biome.shouldSnow(world, pos) && world.isEmptyBlock(pos);
     }
 
-    private void placeSnowLayers(ServerWorld world, BlockPos pos) {
-        world.setBlockState(pos, Blocks.SNOW.getDefaultState());
-        BlockPos belowPos = pos.down();
+    private void placeSnowLayers(ServerLevel world, BlockPos pos) {
+        world.setBlockAndUpdate(pos, Blocks.SNOW.defaultBlockState());
+        BlockPos belowPos = pos.below();
         BlockState belowState = world.getBlockState(belowPos);
-        if (belowState.isSideSolidFullSquare(world, belowPos, Direction.UP) && belowState.contains(SnowyBlock.SNOWY)) {
-            world.setBlockState(belowPos, belowState.with(SnowyBlock.SNOWY, true), 2);
+        if (belowState.isFaceSturdy(world, belowPos, Direction.UP) && belowState.hasProperty(SnowyDirtBlock.SNOWY)) {
+            world.setBlock(belowPos, belowState.setValue(SnowyDirtBlock.SNOWY, true), 2);
         }
     }
 }
