@@ -8,7 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.ServerLevel;
@@ -83,7 +83,7 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
         = registryManager.lookupOrThrow(Registries.BIOME);
         //?}
 
-        ResourceLocation biomeId = biomeRegistry.getResourceKey(biome).get().location();
+        Identifier biomeId = biomeRegistry.getResourceKey(biome).get().identifier();
 
         boolean isSupported = SnowUnderTreesConfig.get().supportedBiomes.contains(biomeId.toString());
 

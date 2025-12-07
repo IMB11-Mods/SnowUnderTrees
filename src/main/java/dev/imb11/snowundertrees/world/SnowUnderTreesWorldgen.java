@@ -31,7 +31,7 @@ public class SnowUnderTreesWorldgen {
 
     private static boolean shouldAddSnow(ResourceKey<Biome> biomeKey) {
         return SnowUnderTreesConfig.get().enableBiomeFeature &&
-                SnowUnderTreesConfig.get().supportedBiomes.contains(biomeKey.location().toString());
+                SnowUnderTreesConfig.get().supportedBiomes.contains(biomeKey.identifier().toString());
     }
 
     public static ResourceKey<ConfiguredFeature<?, ?>> configuredKey() {
