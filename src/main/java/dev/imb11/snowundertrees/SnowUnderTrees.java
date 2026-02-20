@@ -21,6 +21,6 @@ public class SnowUnderTrees implements ModInitializer {
 		SnowUnderTreesWorldgen.initialize();
 		SereneSeasonsEntrypoint.initialize();
 
-		ServerTickEvents.START_WORLD_TICK.register(new WorldTickHandler());
+		ServerTickEvents.START_LEVEL_TICK.register(new WorldTickHandler());
 	}
 }

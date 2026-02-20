@@ -15,13 +15,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
+public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
     @Override
     public void onStartTick(ServerLevel world) {
 
@@ -68,7 +68,7 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
     }
 
     private boolean shouldProcessChunk(ServerLevel world) {
-        return world.random.nextInt(4) == 0; // 25% chance for chunk processing
+        return world.getRandom().nextInt(4) == 0; // 25% chance for chunk processing
     }
 
     public static boolean isBiomeSuitable(ServerLevel world, LevelChunk chunk) {
@@ -112,8 +112,8 @@ public class WorldTickHandler implements ServerTickEvents.StartWorldTick {
         world.setBlockAndUpdate(pos, Blocks.SNOW.defaultBlockState());
         BlockPos belowPos = pos.below();
         BlockState belowState = world.getBlockState(belowPos);
-        if (belowState.isFaceSturdy(world, belowPos, Direction.UP) && belowState.hasProperty(SnowyDirtBlock.SNOWY)) {
-            world.setBlock(belowPos, belowState.setValue(SnowyDirtBlock.SNOWY, true), 2);
+        if (belowState.isFaceSturdy(world, belowPos, Direction.UP) && belowState.hasProperty(SnowyBlock.SNOWY)) {
+            world.setBlock(belowPos, belowState.setValue(SnowyBlock.SNOWY, true), 2);
         }
     }
 }

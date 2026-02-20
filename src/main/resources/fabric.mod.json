@@ -39,6 +39,6 @@
     "fabric-api": "*",
     "fabricloader": ">=${target_fabricloader}",
     "minecraft": "${target_minecraft}",
-    "mru": "~${target_mru}"
+    "mru": "*"
   }
 }

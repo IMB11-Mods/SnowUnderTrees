@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.14-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version '1.14-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -39,23 +39,22 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${property('deps.minecraft')}"
-    mappings loom.officialMojangMappings()
 
-    modImplementation "net.fabricmc:fabric-loader:${property('deps.fabric_loader')}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${property('deps.fabric')}"
+    implementation "net.fabricmc:fabric-loader:${property('deps.fabric_loader')}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${property('deps.fabric')}"
 
-    include modImplementation("dev.isxander:yet-another-config-lib:${property('deps.yacl')}") {
+    include implementation("dev.isxander:yet-another-config-lib:${property('deps.yacl')}") {
         // Remove any fabric API modules.
         exclude group: "net.fabricmc.fabric-api", module: "fabric-api"
     }
 
-    modImplementation ("dev.imb11:mru:${property("deps.mru")}", {
+    implementation ("dev.imb11:mru:${property("deps.mru")}", {
         transitive = false
     })
 
-    modImplementation("com.terraformersmc:modmenu:${property('deps.modmenu')}")
-    modCompileOnly("maven.modrinth:serene-seasons:${property('deps.serene_seasons')}")
-//        modImplementation("maven.modrinth:glitchcore:${property('deps.glitchcore')}")
+    implementation("com.terraformersmc:modmenu:${property('deps.modmenu')}")
+    compileOnly("maven.modrinth:serene-seasons:${property('deps.serene_seasons')}")
+//        implementation("maven.modrinth:glitchcore:${property('deps.glitchcore')}")
 //        implementation 'net.jodah:typetools:0.4.2'
 }
 
@@ -75,7 +74,7 @@ loom {
             name "Data Generation Client"
             vmArg "-Dfabric-api.datagen"
             vmArg "-Dfabric-api.datagen.output-dir=" + getRootDir().toPath().resolve("src/main/generated")
-            vmArg "-Dfabric-api.datagen.modid=snowundertrees"
+            vmArg "-Dfabric-api.datagen.id=snowundertrees"
 
             ideConfigGenerated = false
             runDir "build/datagen"
@@ -105,11 +104,11 @@ sourceSets {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
+    it.options.release = 25
 }
 
 java {
-    var version = stonecutter.eval(mcVersion, ">1.20.4") ? JavaVersion.VERSION_21 : JavaVersion.VERSION_17
+    var version = JavaVersion.VERSION_25
 
     sourceCompatibility = version
     targetCompatibility = version

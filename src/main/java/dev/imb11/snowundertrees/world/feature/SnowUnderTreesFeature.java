@@ -8,7 +8,7 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -66,8 +66,8 @@ public class SnowUnderTreesFeature extends Feature<NoneFeatureConfiguration> {
 
                 BlockPos belowPos = currentPos.below();
                 BlockState belowState = world.getBlockState(belowPos);
-                if (belowState.hasProperty(SnowyDirtBlock.SNOWY)) {
-                    world.setBlock(belowPos, belowState.setValue(SnowyDirtBlock.SNOWY, true), 2);
+                if (belowState.hasProperty(SnowyBlock.SNOWY)) {
+                    world.setBlock(belowPos, belowState.setValue(SnowyBlock.SNOWY, true), 2);
                 }
             }
         }

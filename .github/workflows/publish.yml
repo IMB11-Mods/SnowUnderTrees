@@ -14,7 +14,7 @@ jobs:
         with:
           distribution: corretto
           cache: gradle
-          java-version: 21
+          java-version: 25
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -36,7 +36,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        game_version: ["1.21.11" ]
+        game_version: ["26.1" ]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

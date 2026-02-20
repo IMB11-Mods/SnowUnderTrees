@@ -10,7 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.SnowyDirtBlock;
+import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -68,7 +68,7 @@ public class SereneSeasonsEntrypoint {
             if (!optionalChunk.isSuccess()) continue;
             LevelChunk chunk = optionalChunk.orElseThrow(() -> new IllegalStateException("Chunk is not present"));
 
-            if (!serverWorld.shouldTickBlocksAt(chunk.getPos().toLong())) continue;
+            if (!serverWorld.shouldTickBlocksAt(chunk.getPos().getWorldPosition())) continue;
 
             BlockPos randomPosition = serverWorld.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
             BlockPos heightmapPosition = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, randomPosition).below();
@@ -92,8 +92,8 @@ public class SereneSeasonsEntrypoint {
             BlockPos downPos = pos.below();
             BlockState below = serverWorld.getBlockState(downPos);
 
-            if (below.hasProperty(SnowyDirtBlock.SNOWY)) {
-                serverWorld.setBlock(downPos, below.setValue(SnowyDirtBlock.SNOWY, false), 2);
+            if (below.hasProperty(SnowyBlock.SNOWY)) {
+                serverWorld.setBlock(downPos, below.setValue(SnowyBlock.SNOWY, false), 2);
             }
         }
     }
@@ -117,7 +117,7 @@ public class SereneSeasonsEntrypoint {
     private static boolean shouldMeltSnow(ServerLevel world, Season.SubSeason subSeason) {
         int chance = MELT_CHANCES.getOrDefault(subSeason, -1);
         if (chance == -1) return false;
-        var rnd = world.random.nextInt(0, chance);
+        var rnd = world.getRandom().nextInt(0, chance);
         return rnd == 0;
     }
 
