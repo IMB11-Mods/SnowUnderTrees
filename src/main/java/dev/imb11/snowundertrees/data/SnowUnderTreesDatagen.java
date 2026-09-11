@@ -28,7 +28,7 @@ public class SnowUnderTreesDatagen implements DataGeneratorEntrypoint {
     @Override
     public void buildRegistry(RegistrySetBuilder registryBuilder) {
         // Add all the registries we want to generate data for here.
-        registryBuilder.add(Registries.CONFIGURED_FEATURE, SnowUnderTreesBootstrap::configuredFeatures);
+        registryBuilder.add(Registries.FEATURE, SnowUnderTreesBootstrap::configuredFeatures);
         registryBuilder.add(Registries.PLACED_FEATURE, SnowUnderTreesBootstrap::placedFeatures);
     }
 

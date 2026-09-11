@@ -1,40 +1,45 @@
 package dev.imb11.snowundertrees.world.feature;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import dev.imb11.snowundertrees.compat.SereneSeasonsEntrypoint;
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
-public class SnowUnderTreesFeature extends Feature<NoneFeatureConfiguration> {
+public class SnowUnderTreesFeature implements Feature {
 
-    public SnowUnderTreesFeature(Codec<NoneFeatureConfiguration> codec) {
-        super(codec);
+    public static final SnowUnderTreesFeature INSTANCE = new SnowUnderTreesFeature();
+    public static final MapCodec<SnowUnderTreesFeature> CODEC = MapCodec.unit(INSTANCE);
+
+    public SnowUnderTreesFeature() {
+
     }
 
     @Override
-    public boolean place(FeaturePlaceContext<NoneFeatureConfiguration> context) {
+    public MapCodec<? extends Feature> codec() {
+        return CODEC;
+    }
+
+    @Override
+    public boolean place(WorldGenLevel world, ChunkGenerator chunkGenerator, RandomSource random, BlockPos origin) {
         if (!SnowUnderTreesConfig.get().enableBiomeFeature) {
             return false;
         }
 
         if(SnowUnderTreesConfig.get().respectSeasonMods && SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
-            if(!SereneSeasonsEntrypoint.shouldPlaceSnow(context.level().getLevel(), context.origin())) {
+            if(!SereneSeasonsEntrypoint.shouldPlaceSnow(world.getLevel(), origin)) {
                 return false;
             }
         }
-
-        BlockPos origin = context.origin();
-        WorldGenLevel world = context.level();
 
         // Iterate within a 16x16 area around the feature origin
         for (int xOffset = 0; xOffset < 16; xOffset++) {

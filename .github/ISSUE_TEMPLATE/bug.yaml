@@ -50,7 +50,7 @@ body:
       label: Game Version
       description: What version of the game are you running?
       options:
-        - "26.1"
+        - "26.3"
     validations:
       required: true
 
