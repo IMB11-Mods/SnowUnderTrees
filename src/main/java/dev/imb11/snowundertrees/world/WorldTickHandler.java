@@ -5,6 +5,7 @@ import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public class WorldTickHandler {
+    private final RandomSource snowRandom = RandomSource.createThreadLocalInstance();
     private SnowDiagnostics diagnostics;
     private boolean nativeMode;
     private boolean nativeSnowfall;
@@ -25,12 +27,15 @@ public class WorldTickHandler {
         var config = SnowUnderTreesConfig.get();
         boolean snowfall = config.enableWhenSnowing && world.isRaining();
         int meltInterval = SereneSeasonsEntrypoint.getMeltingInterval(world);
+        boolean wasNativeMode = nativeMode;
         nativeMode = config.maxChunkVisitsPerTick <= 0 && meltInterval == 0;
         nativeSnowfall = nativeMode && snowfall;
         active = snowfall || meltInterval > 0;
-        LoadedChunkTracker.processTick(world, snowfall && !nativeMode, meltInterval, config.maxChunkVisitsPerTick,
-                chunk -> processChunk(world, chunk, diagnostics),
-                chunk -> SereneSeasonsEntrypoint.meltSnowInChunk(world, chunk));
+        if (!nativeMode || !wasNativeMode) {
+            LoadedChunkTracker.processTick(world, snowfall && !nativeMode, meltInterval, config.maxChunkVisitsPerTick,
+                    snowRandom, chunk -> processChunk(world, chunk, diagnostics),
+                    chunk -> SereneSeasonsEntrypoint.meltSnowInChunk(world, chunk));
+        }
         if (diagnostics != null) diagnostics.endScheduler(started);
     }
 
@@ -42,7 +47,7 @@ public class WorldTickHandler {
             diagnostics.count(SnowDiagnostics.Counter.NATIVE_SNOW_VISITS);
         }
         long started = diagnostics == null ? 0 : diagnostics.startStage();
-        boolean process = world.getRandom().nextInt(4) == 0;
+        boolean process = snowRandom.nextInt(4) == 0;
         if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.RANDOM_CHECK, started);
         if (process) {
             if (diagnostics != null) diagnostics.count(SnowDiagnostics.Counter.SNOW_READY);

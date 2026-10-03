@@ -7,6 +7,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.Arrays;
@@ -46,7 +47,7 @@ public final class LoadedChunkTracker {
     }
 
     public static void processTick(ServerLevel world, boolean snowfall, int meltInterval, int limit,
-                                   Consumer<LevelChunk> snowAction, Consumer<LevelChunk> meltAction) {
+                                   RandomSource snowRandom, Consumer<LevelChunk> snowAction, Consumer<LevelChunk> meltAction) {
         if (meltInterval < 0 || (meltInterval > 0 && MELT_PHASE_COUNT % meltInterval != 0)) {
             throw new IllegalArgumentException("Unsupported melting interval: " + meltInterval);
         }
@@ -101,7 +102,7 @@ public final class LoadedChunkTracker {
             }
             if (!melt) {
                 started = diagnostics == null ? 0 : diagnostics.startStage();
-                boolean process = world.getRandom().nextInt(4) == 0;
+                boolean process = snowRandom.nextInt(4) == 0;
                 if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.RANDOM_CHECK, started);
                 if (!process) {
                     if (diagnostics != null) {
