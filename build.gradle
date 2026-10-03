@@ -51,7 +51,10 @@ dependencies {
 
     implementation("com.terraformersmc:modmenu:${property('deps.modmenu')}")
     compileOnly("maven.modrinth:serene-seasons:${property('deps.serene_seasons')}")
-//        implementation("maven.modrinth:glitchcore:${property('deps.glitchcore')}")
+    // Serene Seasons' configuration classes extend GlitchCore's Config.
+    compileOnly("maven.modrinth:glitchcore:${property('deps.glitchcore')}")
+    // Modrinth's artifact does not expose GlitchCore's bundled libraries transitively.
+    compileOnly("com.electronwill.night-config:core:3.6.7")
 //        implementation 'net.jodah:typetools:0.4.2'
 }
 

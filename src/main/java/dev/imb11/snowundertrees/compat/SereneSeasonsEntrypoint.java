@@ -2,10 +2,9 @@
 package dev.imb11.snowundertrees.compat;
 
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
-import dev.imb11.snowundertrees.mixins.ThreadedAnvilChunkStorageInvoker;
+import dev.imb11.snowundertrees.world.LoadedChunkTracker;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
@@ -13,7 +12,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,44 +57,36 @@ public class SereneSeasonsEntrypoint {
                 || !ModConfig.seasons.generateSnowAndIce) return;
         if (!shouldMeltSnow(serverWorld, SeasonHelper.getSeasonState(serverWorld).getSubSeason())) return;
 
-        ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) serverWorld.getChunkSource().chunkMap;
+        LoadedChunkTracker.forEachEntityTickingChunk(serverWorld, chunk -> meltSnowInChunk(serverWorld, chunk));
+    }
 
-        for (ChunkHolder chunkHolder : chunkStorage.invokeEntryIterator(
-                //? if >1.21.8
-                ChunkStatus.EMPTY).toList(
-                )) {
-            var optionalChunk = chunkHolder.getEntityTickingChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK);
+    private static void meltSnowInChunk(ServerLevel serverWorld, LevelChunk chunk) {
+        if (!serverWorld.shouldTickBlocksAt(chunk.getPos().getWorldPosition())) return;
 
-            if (!optionalChunk.isSuccess()) continue;
-            LevelChunk chunk = optionalChunk.orElseThrow(() -> new IllegalStateException("Chunk is not present"));
+        BlockPos randomPosition = serverWorld.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
+        BlockPos heightmapPosition = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, randomPosition).below();
+        BlockState blockState = serverWorld.getBlockState(heightmapPosition);
+        if (!blockState.is(BlockTags.LEAVES)) {
+            return;
+        }
 
-            if (!serverWorld.shouldTickBlocksAt(chunk.getPos().getWorldPosition())) continue;
+        BlockPos pos = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPosition);
+        BlockState before = serverWorld.getBlockState(pos);
+        if (!before.is(Blocks.SNOW)) {
+            return;
+        }
 
-            BlockPos randomPosition = serverWorld.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
-            BlockPos heightmapPosition = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, randomPosition).below();
-            BlockState blockState = serverWorld.getBlockState(heightmapPosition);
-            if (!blockState.is(BlockTags.LEAVES)) {
-                continue;
-            }
+        if (!isWarmEnoughToRainSeasonal(serverWorld, pos)) {
+            return;
+        }
 
-            BlockPos pos = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPosition);
-            BlockState before = serverWorld.getBlockState(pos);
-            if (!before.is(Blocks.SNOW)) {
-                continue;
-            }
+        serverWorld.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
 
-            if (!isWarmEnoughToRainSeasonal(serverWorld, pos)) {
-                continue;
-            }
+        BlockPos downPos = pos.below();
+        BlockState below = serverWorld.getBlockState(downPos);
 
-            serverWorld.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
-
-            BlockPos downPos = pos.below();
-            BlockState below = serverWorld.getBlockState(downPos);
-
-            if (below.hasProperty(SnowyBlock.SNOWY)) {
-                serverWorld.setBlock(downPos, below.setValue(SnowyBlock.SNOWY, false), 2);
-            }
+        if (below.hasProperty(SnowyBlock.SNOWY)) {
+            serverWorld.setBlock(downPos, below.setValue(SnowyBlock.SNOWY, false), 2);
         }
     }
 

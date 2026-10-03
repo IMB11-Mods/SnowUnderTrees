@@ -2,15 +2,12 @@ package dev.imb11.snowundertrees.world;
 
 import dev.imb11.snowundertrees.compat.SereneSeasonsEntrypoint;
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
-import dev.imb11.snowundertrees.mixins.ThreadedAnvilChunkStorageInvoker;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
-import net.minecraft.server.level.ChunkHolder;
-import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -18,7 +15,6 @@ import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SnowyBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
@@ -35,24 +31,11 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
             return;
         }
 
-        ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
-
-        Iterable<ChunkHolder> chunkHolders = chunkStorage.invokeEntryIterator(
-                //? if >1.21.8
-                ChunkStatus.EMPTY).toList(
-                );
-        chunkHolders.forEach(chunkHolder -> processChunk(world, chunkHolder));
+        LoadedChunkTracker.forEachEntityTickingChunk(world, chunk -> processChunk(world, chunk));
     }
 
-    private void processChunk(ServerLevel world, ChunkHolder chunkHolder) {
-        ChunkResult<LevelChunk> optionalChunk = chunkHolder.getEntityTickingChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK);
-
-        if (optionalChunk.isSuccess() && shouldProcessChunk(world)) {
-            LevelChunk chunk = optionalChunk.orElse(null);
-            if (chunk == null) {
-                return;
-            }
-
+    private void processChunk(ServerLevel world, LevelChunk chunk) {
+        if (shouldProcessChunk(world)) {
             // Early biome eligibility check
             if (!isBiomeSuitable(world, chunk)) {
                 return; // Skip to next chunk if biome doesn't support snow
