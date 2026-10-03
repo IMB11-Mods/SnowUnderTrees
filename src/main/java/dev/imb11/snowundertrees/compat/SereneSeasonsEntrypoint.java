@@ -80,12 +80,12 @@ public class SereneSeasonsEntrypoint {
             }
 
             BlockPos pos = serverWorld.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPosition);
-            if (!isWarmEnoughToRainSeasonal(serverWorld, pos)) {
+            BlockState before = serverWorld.getBlockState(pos);
+            if (!before.is(Blocks.SNOW)) {
                 continue;
             }
 
-            BlockState before = serverWorld.getBlockState(pos);
-            if (!before.is(Blocks.SNOW)) {
+            if (!isWarmEnoughToRainSeasonal(serverWorld, pos)) {
                 continue;
             }
 
