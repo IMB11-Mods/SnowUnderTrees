@@ -15,8 +15,8 @@ final class TrackedChunkPositions {
     }
 
     long next() {
-        long position = positions.removeFirstLong();
-        positions.add(position);
+        long position = positions.firstLong();
+        positions.addAndMoveToLast(position);
         return position;
     }
 }

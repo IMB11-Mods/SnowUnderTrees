@@ -50,6 +50,7 @@ dependencies {
     })
 
     implementation("com.terraformersmc:modmenu:${property('deps.modmenu')}")
+    runtimeOnly("maven.modrinth:spark:${property('deps.spark')}")
     compileOnly("maven.modrinth:serene-seasons:${property('deps.serene_seasons')}")
     // Serene Seasons' configuration classes extend GlitchCore's Config.
     compileOnly("maven.modrinth:glitchcore:${property('deps.glitchcore')}")

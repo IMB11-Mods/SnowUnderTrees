@@ -32,7 +32,8 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
         BlockPos randomPos = findRandomSurfacePosition(world, chunk);
         if (randomPos == null) return;
 
-        BlockPos snowPlacementPos = world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPos);
+        BlockPos snowPlacementPos = randomPos.atY(chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                randomPos.getX() & 15, randomPos.getZ() & 15) + 1);
         if (canPlaceSnow(world, snowPlacementPos)) {
             placeSnowLayers(world, snowPlacementPos);
         }
@@ -44,7 +45,9 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
 
     private BlockPos findRandomSurfacePosition(ServerLevel world, LevelChunk chunk) {
         BlockPos randomPos = world.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
-        if (world.getBlockState(world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, randomPos).below()).getBlock() instanceof LeavesBlock) {
+        BlockPos canopyPos = randomPos.atY(chunk.getHeight(Heightmap.Types.MOTION_BLOCKING,
+                randomPos.getX() & 15, randomPos.getZ() & 15));
+        if (chunk.getBlockState(canopyPos).getBlock() instanceof LeavesBlock) {
             return randomPos;
         }
         return null; // Return null if we didn't find a suitable starting point

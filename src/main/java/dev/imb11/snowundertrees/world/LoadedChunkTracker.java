@@ -45,7 +45,7 @@ public final class LoadedChunkTracker {
         if (positions.lastTick == tick) return;
         positions.lastTick = tick;
 
-        if (meltInterval != positions.meltInterval || meltInterval == 0) {
+        if (meltInterval != positions.meltInterval) {
             Arrays.fill(positions.pendingMelting, 0);
             positions.meltInterval = meltInterval;
         }
@@ -63,7 +63,7 @@ public final class LoadedChunkTracker {
         var chunkMap = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
         while (allowance > 0) {
             snowRemaining = Math.min(snowRemaining, positions.loaded.size());
-            int meltBucket = positions.nextMeltingBucket();
+            int meltBucket = meltInterval > 0 ? positions.nextMeltingBucket() : -1;
             boolean snowWaiting = snowRemaining > 0;
             boolean meltWaiting = meltBucket >= 0;
             if (!snowWaiting && !meltWaiting) break;
