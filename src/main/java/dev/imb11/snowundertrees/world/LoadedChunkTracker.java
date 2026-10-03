@@ -61,6 +61,7 @@ public final class LoadedChunkTracker {
             Arrays.fill(positions.pendingMelting, 0);
             positions.meltInterval = meltInterval;
         }
+        if (!snowfall && meltInterval == 0) return;
         if (meltInterval > 0) {
             int phase = (int) Math.floorMod(tick, (long) meltInterval);
             for (int bucket = phase; bucket < MELT_PHASE_COUNT; bucket += meltInterval) {
@@ -74,7 +75,8 @@ public final class LoadedChunkTracker {
         long allowance = limit <= 0 ? Long.MAX_VALUE : limit;
         var chunkMap = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
         while (allowance > 0) {
-            long started = diagnostics == null ? 0 : diagnostics.beginVisit();
+            long visitStarted = diagnostics == null ? 0 : diagnostics.beginVisit();
+            long started = visitStarted;
             snowRemaining = Math.min(snowRemaining, positions.loaded.size());
             int meltBucket = meltInterval > 0 ? positions.nextMeltingBucket() : -1;
             boolean snowWaiting = snowRemaining > 0;
@@ -102,7 +104,10 @@ public final class LoadedChunkTracker {
                 boolean process = world.getRandom().nextInt(4) == 0;
                 if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.RANDOM_CHECK, started);
                 if (!process) {
-                    if (diagnostics != null) diagnostics.count(SnowDiagnostics.Counter.RANDOM_REJECTED);
+                    if (diagnostics != null) {
+                        diagnostics.count(SnowDiagnostics.Counter.RANDOM_REJECTED);
+                        diagnostics.endStage(SnowDiagnostics.Stage.VISIT, visitStarted);
+                    }
                     continue;
                 }
                 if (diagnostics != null) diagnostics.count(SnowDiagnostics.Counter.SNOW_READINESS_CHECKS);
@@ -110,7 +115,10 @@ public final class LoadedChunkTracker {
             started = diagnostics == null ? 0 : diagnostics.startStage();
             LevelChunk chunk = getEntityTickingChunk(chunkMap, position);
             if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.CHUNK_READINESS, started);
-            if (chunk == null) continue;
+            if (chunk == null) {
+                if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.VISIT, visitStarted);
+                continue;
+            }
             if (diagnostics != null) {
                 diagnostics.count(melt ? SnowDiagnostics.Counter.MELT_READY : SnowDiagnostics.Counter.SNOW_READY);
             }
@@ -121,6 +129,7 @@ public final class LoadedChunkTracker {
             } else {
                 snowAction.accept(chunk);
             }
+            if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.VISIT, visitStarted);
         }
     }
 

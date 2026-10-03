@@ -16,13 +16,13 @@ final class SnowDiagnostics {
     private static final int SAMPLE_INTERVAL = 256;
 
     enum Counter {
-        SNOW_VISITS, SNOW_READINESS_CHECKS, SNOW_READY, MELT_VISITS, MELT_READY, RANDOM_REJECTED, NO_CANOPY,
+        SNOW_VISITS, NATIVE_SNOW_VISITS, SNOW_READINESS_CHECKS, SNOW_READY, MELT_VISITS, MELT_READY, RANDOM_REJECTED, NO_CANOPY,
         OUTSIDE_HEIGHT, OCCUPIED, UNSUPPORTED_BIOME, VANILLA_REJECTED, SEASON_REJECTED,
         PLACEMENT_ATTEMPTS, SNOW_PLACED
     }
 
     enum Stage {
-        SCHEDULING, CHUNK_READINESS, RANDOM_CHECK, CANOPY_SEARCH, GROUND_HEIGHT,
+        VISIT, SCHEDULING, CHUNK_READINESS, RANDOM_CHECK, CANOPY_SEARCH, GROUND_HEIGHT,
         PLACEMENT_CHECKS, SNOW_PLACEMENT, MELTING
     }
 
@@ -32,9 +32,9 @@ final class SnowDiagnostics {
     private Instant windowStart;
     private int ticks;
     private int activeTicks;
-    private long handlerNanos;
-    private long activeNanos;
-    private long maxHandlerNanos;
+    private int nativeTicks;
+    private long schedulerNanos;
+    private long maxSchedulerNanos;
     private int visitsUntilSample;
     private boolean sampleVisit;
 
@@ -66,15 +66,16 @@ final class SnowDiagnostics {
         counters[counter.ordinal()]++;
     }
 
-    void endTick(ServerLevel world, long started, boolean active) {
+    void endScheduler(long started) {
         long elapsed = System.nanoTime() - started;
-        handlerNanos += elapsed;
-        maxHandlerNanos = Math.max(maxHandlerNanos, elapsed);
+        schedulerNanos += elapsed;
+        maxSchedulerNanos = Math.max(maxSchedulerNanos, elapsed);
+    }
+
+    void endTick(ServerLevel world, boolean active, boolean nativeMode) {
         ticks++;
-        if (active) {
-            activeTicks++;
-            activeNanos += elapsed;
-        }
+        if (active) activeTicks++;
+        if (nativeMode) nativeTicks++;
         if (ticks == REPORT_TICKS) report(world);
     }
 
@@ -88,7 +89,8 @@ final class SnowDiagnostics {
                         .append(counters[counter.ordinal()]);
             }
             counts.append(" snow_unavailable=")
-                    .append(counters[Counter.SNOW_READINESS_CHECKS.ordinal()] - counters[Counter.SNOW_READY.ordinal()]);
+                    .append(counters[Counter.SNOW_VISITS.ordinal()] - counters[Counter.RANDOM_REJECTED.ordinal()]
+                            - counters[Counter.SNOW_READY.ordinal()]);
             counts.append(" melt_unavailable=")
                     .append(counters[Counter.MELT_VISITS.ordinal()] - counters[Counter.MELT_READY.ordinal()]);
 
@@ -101,13 +103,14 @@ final class SnowDiagnostics {
                         .append(",mean_ns=").append(stageSamples[index] == 0 ? "n/a"
                                 : format((double) stageNanos[index] / stageSamples[index])).append('}');
             }
-            LOGGER.info("window_start={} window_end={} dimension={} ticks={} active_ticks={} "
-                            + "handler_mean_ms={} handler_active_mean_ms={} handler_max_ms={} "
+            String visitEstimate = stageSamples[Stage.VISIT.ordinal()] == 0 ? "n/a"
+                    : format(stageNanos[Stage.VISIT.ordinal()] * (double) SAMPLE_INTERVAL / (ticks * 1_000_000.0));
+            LOGGER.info("window_start={} window_end={} dimension={} ticks={} active_ticks={} native_ticks={} "
+                            + "scheduler_mean_ms={} scheduler_max_ms={} visit_estimated_ms_per_tick={} "
                             + "stage_sample_every={} counts=[{}] sampled_stages=[{}]",
-                    windowStart, Instant.now(), world.dimension().identifier(), ticks, activeTicks,
-                    format(handlerNanos / (ticks * 1_000_000.0)),
-                    format(activeNanos / (activeTicks * 1_000_000.0)),
-                    format(maxHandlerNanos / 1_000_000.0), SAMPLE_INTERVAL, counts, timings);
+                    windowStart, Instant.now(), world.dimension().identifier(), ticks, activeTicks, nativeTicks,
+                    format(schedulerNanos / (ticks * 1_000_000.0)),
+                    format(maxSchedulerNanos / 1_000_000.0), visitEstimate, SAMPLE_INTERVAL, counts, timings);
         }
         Arrays.fill(counters, 0);
         Arrays.fill(stageNanos, 0);
@@ -115,9 +118,9 @@ final class SnowDiagnostics {
         windowStart = null;
         ticks = 0;
         activeTicks = 0;
-        handlerNanos = 0;
-        activeNanos = 0;
-        maxHandlerNanos = 0;
+        nativeTicks = 0;
+        schedulerNanos = 0;
+        maxSchedulerNanos = 0;
     }
 
     private static String format(double value) {

@@ -2,7 +2,6 @@ package dev.imb11.snowundertrees.world;
 
 import dev.imb11.snowundertrees.compat.SereneSeasonsEntrypoint;
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -14,18 +13,49 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
-public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
-    @Override
+public class WorldTickHandler {
+    private SnowDiagnostics diagnostics;
+    private boolean nativeMode;
+    private boolean nativeSnowfall;
+    private boolean active;
+
     public void onStartTick(ServerLevel world) {
-        SnowDiagnostics diagnostics = SnowDiagnostics.ENABLED ? LoadedChunkTracker.diagnostics(world) : null;
+        diagnostics = SnowDiagnostics.ENABLED ? LoadedChunkTracker.diagnostics(world) : null;
         long started = diagnostics == null ? 0 : diagnostics.beginTick();
         var config = SnowUnderTreesConfig.get();
         boolean snowfall = config.enableWhenSnowing && world.isRaining();
         int meltInterval = SereneSeasonsEntrypoint.getMeltingInterval(world);
-        LoadedChunkTracker.processTick(world, snowfall, meltInterval, config.maxChunkVisitsPerTick,
+        nativeMode = config.maxChunkVisitsPerTick <= 0 && meltInterval == 0;
+        nativeSnowfall = nativeMode && snowfall;
+        active = snowfall || meltInterval > 0;
+        LoadedChunkTracker.processTick(world, snowfall && !nativeMode, meltInterval, config.maxChunkVisitsPerTick,
                 chunk -> processChunk(world, chunk, diagnostics),
                 chunk -> SereneSeasonsEntrypoint.meltSnowInChunk(world, chunk));
-        if (diagnostics != null) diagnostics.endTick(world, started, snowfall || meltInterval > 0);
+        if (diagnostics != null) diagnostics.endScheduler(started);
+    }
+
+    public void onChunkTick(ServerLevel world, LevelChunk chunk) {
+        if (!nativeSnowfall) return;
+        long visitStarted = diagnostics == null ? 0 : diagnostics.beginVisit();
+        if (diagnostics != null) {
+            diagnostics.count(SnowDiagnostics.Counter.SNOW_VISITS);
+            diagnostics.count(SnowDiagnostics.Counter.NATIVE_SNOW_VISITS);
+        }
+        long started = diagnostics == null ? 0 : diagnostics.startStage();
+        boolean process = world.getRandom().nextInt(4) == 0;
+        if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.RANDOM_CHECK, started);
+        if (process) {
+            if (diagnostics != null) diagnostics.count(SnowDiagnostics.Counter.SNOW_READY);
+            processChunk(world, chunk, diagnostics);
+        } else if (diagnostics != null) {
+            diagnostics.count(SnowDiagnostics.Counter.RANDOM_REJECTED);
+        }
+        if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.VISIT, visitStarted);
+    }
+
+    public void onEndTick(ServerLevel world) {
+        nativeSnowfall = false;
+        if (diagnostics != null) diagnostics.endTick(world, active, nativeMode);
     }
 
     private void processChunk(ServerLevel world, LevelChunk chunk, SnowDiagnostics diagnostics) {

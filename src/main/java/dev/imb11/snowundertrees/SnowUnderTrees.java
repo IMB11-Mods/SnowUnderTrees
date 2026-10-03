@@ -3,10 +3,8 @@ package dev.imb11.snowundertrees;
 import dev.imb11.snowundertrees.compat.SereneSeasonsEntrypoint;
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
 import dev.imb11.snowundertrees.world.SnowUnderTreesWorldgen;
-import dev.imb11.snowundertrees.world.WorldTickHandler;
 import dev.imb11.snowundertrees.world.LoadedChunkTracker;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.resources.Identifier;
 
 public class SnowUnderTrees implements ModInitializer {
@@ -22,7 +20,5 @@ public class SnowUnderTrees implements ModInitializer {
 		SnowUnderTreesWorldgen.initialize();
 		SereneSeasonsEntrypoint.initialize();
 		LoadedChunkTracker.initialize();
-
-		ServerTickEvents.START_LEVEL_TICK.register(new WorldTickHandler());
 	}
 }

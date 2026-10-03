@@ -3,6 +3,7 @@
     "minVersion": "0.8",
     "package": "dev.imb11.snowundertrees.mixins",
     "mixins": [
+        "ServerLevelMixin",
         "ThreadedAnvilChunkStorageInvoker"
     ],
     "client": [
