@@ -5,11 +5,8 @@ import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.SnowyBlock;
@@ -35,49 +32,19 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
     }
 
     private void processChunk(ServerLevel world, LevelChunk chunk) {
-        if (shouldProcessChunk(world)) {
-            // Early biome eligibility check
-            if (!isBiomeSuitable(world, chunk)) {
-                return; // Skip to next chunk if biome doesn't support snow
-            }
+        if (!shouldProcessChunk(world)) return;
 
-            BlockPos randomPos = findRandomSurfacePosition(world, chunk);
-            if (randomPos != null) { // Guard in case no eligible surface position was found
-                BlockPos snowPlacementPos = world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPos);
+        BlockPos randomPos = findRandomSurfacePosition(world, chunk);
+        if (randomPos == null) return;
 
-                if (canPlaceSnow(world, snowPlacementPos)) {
-                    placeSnowLayers(world, snowPlacementPos);
-                }
-            }
+        BlockPos snowPlacementPos = world.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, randomPos);
+        if (canPlaceSnow(world, snowPlacementPos)) {
+            placeSnowLayers(world, snowPlacementPos);
         }
     }
 
     private boolean shouldProcessChunk(ServerLevel world) {
-        return world.getRandom().nextInt(4) == 0; // 25% chance for chunk processing
-    }
-
-    public static boolean isBiomeSuitable(ServerLevel world, LevelChunk chunk) {
-        BlockPos biomeCheckPos = world.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);
-        Biome biome = world.getBiome(biomeCheckPos).value();
-
-        var registryManager = world.registryAccess();
-        Registry<Biome> biomeRegistry
-        //? if <1.21.2 {
-        /*= registryManager.registryOrThrow(Registries.BIOME);
-        *///?} else {
-        = registryManager.lookupOrThrow(Registries.BIOME);
-        //?}
-
-        Identifier biomeId = biomeRegistry.getResourceKey(biome).get().identifier();
-
-        boolean isSupported = SnowUnderTreesConfig.get().supportsBiome(biomeId);
-
-        if (SereneSeasonsEntrypoint.isSeasonIntegrationEnabled(world)) {
-            return SereneSeasonsEntrypoint.shouldPlaceSnow(world, biomeCheckPos)
-                    || isSupported;
-        }
-
-        return isSupported;
+        return world.getRandom().nextInt(4) == 0;
     }
 
     private BlockPos findRandomSurfacePosition(ServerLevel world, LevelChunk chunk) {
@@ -89,8 +56,23 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
     }
 
     private boolean canPlaceSnow(ServerLevel world, BlockPos pos) {
-        Biome biome = world.getBiome(pos).value();
-        return biome.shouldSnow(world, pos) && world.isEmptyBlock(pos);
+        if (!world.isInsideBuildHeight(pos.getY())
+                || !world.isEmptyBlock(pos)
+                || world.getBrightness(LightLayer.BLOCK, pos) >= 10
+                || !Blocks.SNOW.defaultBlockState().canSurvive(world, pos)) {
+            return false;
+        }
+
+        var biome = world.getBiome(pos);
+        if (SereneSeasonsEntrypoint.isSeasonIntegrationEnabled(world)) {
+            return biome.value().hasPrecipitation()
+                    && SereneSeasonsEntrypoint.shouldPlaceSnow(world, pos);
+        }
+
+        return biome.unwrapKey()
+                .map(key -> SnowUnderTreesConfig.get().supportsBiome(key.identifier()))
+                .orElse(false)
+                && biome.value().shouldSnow(world, pos);
     }
 
     private void placeSnowLayers(ServerLevel world, BlockPos pos) {
