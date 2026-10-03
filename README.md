@@ -1,4 +1,4 @@
-![](https://cdn.mineblock11.dev/requires_fabric_api.png) [![](https://cdn.mineblock11.dev/mineblock%20badge_64h.png)](https://discord.gg/UzHtJKqHny) [![](https://cdn.mineblock11.dev/modding-elite-badge.png)](https://ko-fi.com/mineblock11)
+![](https://cdn.imb11.dev/requires_fabric_api.png) [![](https://cdn.imb11.dev/mineblock%20badge_64h.png)](https://discord.gg/UzHtJKqHny) [![](https://cdn.imb11.dev/modding-elite-badge.png)](https://ko-fi.com/mineblock11)
 
 # Snow Under Trees (Fabric)
 
@@ -8,13 +8,19 @@ Adds snow under trees in snowy biomes, making the biomes more immersive.
 
 ## Config
 
-- `enable_biome_feature` - Setting this to false will disable snow from generating under trees when new chunks are generated.
-- `enable_when_snowing` - Setting this to false will disable snow from generating under trees when it is snowing in the world.
-- `supported_biomes` - Any biomes whose biome IDs are in this list will have generation applied to them.
+You can adjust these settings in the mod's configuration screen:
+
+- **Enable Generation** (`enableBiomeFeature`) - Add snow under trees in newly explored areas.
+- **Generate When Snowing** (`enableWhenSnowing`) - Add snow under trees while it is snowing. Works even when Enable Generation is turned off.
+- **Respect Season Mods** (`respectSeasonMods`) - Let season mods influence when snow forms under trees, based on the time of year.
+- **Melt Snow Seasonally** (`meltSnowSeasonally`) - Let snow under trees melt as the seasons warm up. Requires a season mod and Respect Season Mods to be turned on.
+- **Supported Biomes** (`supportedBiomes`) - Biomes where snow can form under trees. Enter biome IDs, such as `minecraft:snowy_taiga`. Season mods can also allow snow in other biomes when it is cold enough.
+
+The seasonal settings appear when Serene Seasons is installed. Turning off Melt Snow Seasonally stops Snow Under Trees from melting snow; snow can still melt naturally or through other mods.
 
 ![](https://cdn.modrinth.com/data/XVnUIUAQ/images/63dab93d742aec317ba25e1d20efe9e38d32b6ad.png)
 
-## Compatability
+## Compatibility
 
 Snow Under Trees is compatible with the following biome mods:
 
@@ -38,7 +44,8 @@ Snow Under Trees also supports [Serene Seasons](https://modrinth.com/mod/serene-
 
 <small>
 
-By using my mods, you agree to the [Modpack Distribution Guidelines](https://imb11.dev/legal/modpacks) and the [End User License Agreement](https://imb11.dev/legal/eula)
+By using my mods, you agree to the [End User License Agreement](https://raw.githubusercontent.com/IMB11/IMB11/refs/heads/main/MODS_END_USER_LICENSE_AGREEMENT.md)
 
 This mod has no code from the original mod, and is essentially a complete rewrite at this point, hence why I have chosen to license it under ARR. All versions before 2.2.0 are still MIT, you can view their code on GitHub.
+
 </small>

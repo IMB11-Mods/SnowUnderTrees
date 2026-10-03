@@ -153,12 +153,6 @@ public class SnowUnderTreesConfig {
                     .name(CONFIG_HELPER.getText(EntryType.OPTION_NAME, "enableBiomeFeature"))
                     .description(CONFIG_HELPER.get("enableBiomeFeature", true))
                     .binding(defaults.enableBiomeFeature, () -> config.enableBiomeFeature, (v) -> config.enableBiomeFeature = v)
-                    .listener((opt, val) -> {
-                        enableWhenSnowingOption.setAvailable(val);
-                        supportedBiomesOption.setAvailable(val);
-                        respectSeasonModsOption.setAvailable(val);
-                        meltSnowSeasonallyOption.setAvailable(val);
-                    })
                     .controller(opt -> BooleanControllerBuilder.create(opt).yesNoFormatter().coloured(true))
                     .build();
 

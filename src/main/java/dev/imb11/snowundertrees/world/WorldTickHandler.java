@@ -25,11 +25,13 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
     @Override
     public void onStartTick(ServerLevel world) {
 
-        if(SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
+        if (SnowUnderTreesConfig.get().respectSeasonMods
+                && SnowUnderTreesConfig.get().meltSnowSeasonally
+                && SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
             SereneSeasonsEntrypoint.attemptMeltSnow(world);
         }
 
-        if (!SnowUnderTreesConfig.get().enableBiomeFeature || !SnowUnderTreesConfig.get().enableWhenSnowing || !world.isRaining()) {
+        if (!SnowUnderTreesConfig.get().enableWhenSnowing || !world.isRaining()) {
             return;
         }
 
@@ -87,8 +89,8 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
 
         boolean isSupported = SnowUnderTreesConfig.get().supportedBiomes.contains(biomeId.toString());
 
-        if(SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
-            return SereneSeasonsEntrypoint.isBiomeSuitable(world, biomeCheckPos)
+        if (SereneSeasonsEntrypoint.isSeasonIntegrationEnabled(world)) {
+            return SereneSeasonsEntrypoint.shouldPlaceSnow(world, biomeCheckPos)
                     || isSupported;
         }
 

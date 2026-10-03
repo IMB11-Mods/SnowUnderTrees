@@ -54,7 +54,9 @@ public class SereneSeasonsEntrypoint {
     }
 
     public static void attemptMeltSnow(ServerLevel serverWorld) {
-        if (isWinter(serverWorld) && !SnowUnderTreesConfig.get().meltSnowSeasonally) return;
+        if (!SnowUnderTreesConfig.get().meltSnowSeasonally
+                || !isSeasonIntegrationEnabled(serverWorld)
+                || !ModConfig.seasons.generateSnowAndIce) return;
         if (!shouldMeltSnow(serverWorld, SeasonHelper.getSeasonState(serverWorld).getSubSeason())) return;
 
         ThreadedAnvilChunkStorageInvoker chunkStorage = (ThreadedAnvilChunkStorageInvoker) serverWorld.getChunkSource().chunkMap;
@@ -125,8 +127,13 @@ public class SereneSeasonsEntrypoint {
         return SeasonHelper.getSeasonState(world).getSeason() == Season.WINTER;
     }
 
+    public static boolean isSeasonIntegrationEnabled(Level world) {
+        return isSereneSeasonsLoaded && SnowUnderTreesConfig.get().respectSeasonMods
+                && ModConfig.seasons.isDimensionWhitelisted(world.dimension());
+    }
+
     public static boolean shouldPlaceSnow(Level world, BlockPos pos) {
-        if (isSereneSeasonsLoaded) {
+        if (isSeasonIntegrationEnabled(world)) {
             return ModConfig.seasons.generateSnowAndIce && isBiomeSuitable((ServerLevel) world, pos);
         } else {
             return false;

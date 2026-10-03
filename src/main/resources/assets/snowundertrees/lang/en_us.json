@@ -2,13 +2,13 @@
   "modmenu.descriptionTranslation.snowundertrees": "Adds snow under trees in snowy biomes.",
   "snowundertrees.config.title": "Snow Under Trees Config",
   "snowundertrees.config.option.enableBiomeFeature": "Enable Generation",
-  "snowundertrees.config.option.description.enableBiomeFeature": "If disabled, no snow will be generated under trees.",
+  "snowundertrees.config.option.description.enableBiomeFeature": "Add snow under trees in newly explored areas.",
   "snowundertrees.config.option.enableWhenSnowing": "Generate When Snowing",
-  "snowundertrees.config.option.description.enableWhenSnowing": "If disabled, snow will not be generated under trees when it is snowing.",
+  "snowundertrees.config.option.description.enableWhenSnowing": "Add snow under trees while it is snowing. Works even when Enable Generation is turned off.",
   "snowundertrees.config.option.respectSeasonMods": "Respect Season Mods",
-  "snowundertrees.config.option.description.respectSeasonMods": "If enabled, Snow Under Trees will respect season mods - snow will only generate during winter.",
+  "snowundertrees.config.option.description.respectSeasonMods": "Let season mods influence when snow forms under trees, based on the time of year.",
   "snowundertrees.config.option.meltSnowSeasonally": "Melt Snow Seasonally",
-  "snowundertrees.config.option.description.meltSnowSeasonally": "If enabled, snow under trees will melt during spring, summer and autumn with variable melt-rates based on the season.",
+  "snowundertrees.config.option.description.meltSnowSeasonally": "Let snow under trees melt as the seasons warm up. Requires a season mod and Respect Season Mods to be turned on.",
   "snowundertrees.config.option.supportedBiomes": "Supported Biomes",
-  "snowundertrees.config.option.description.supportedBiomes": "A list of biome IDs that will have snow generated under trees.\n\nIf a season mod is installed, Snow Under Trees will first check if the biome can support snow in the current season alongside the biomes within this list."
+  "snowundertrees.config.option.description.supportedBiomes": "Biomes where snow can form under trees. Enter biome IDs, such as minecraft:snowy_taiga.\n\nSeason mods can also allow snow in other biomes when it is cold enough."
 }

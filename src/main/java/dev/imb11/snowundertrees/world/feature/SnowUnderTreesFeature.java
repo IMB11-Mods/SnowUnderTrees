@@ -35,7 +35,7 @@ public class SnowUnderTreesFeature implements Feature {
             return false;
         }
 
-        if(SnowUnderTreesConfig.get().respectSeasonMods && SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
+        if (SereneSeasonsEntrypoint.isSeasonIntegrationEnabled(world.getLevel())) {
             if(!SereneSeasonsEntrypoint.shouldPlaceSnow(world.getLevel(), origin)) {
                 return false;
             }
