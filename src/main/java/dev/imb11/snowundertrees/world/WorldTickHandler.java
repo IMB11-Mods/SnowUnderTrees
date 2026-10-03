@@ -70,7 +70,7 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
 
         Identifier biomeId = biomeRegistry.getResourceKey(biome).get().identifier();
 
-        boolean isSupported = SnowUnderTreesConfig.get().supportedBiomes.contains(biomeId.toString());
+        boolean isSupported = SnowUnderTreesConfig.get().supportsBiome(biomeId);
 
         if (SereneSeasonsEntrypoint.isSeasonIntegrationEnabled(world)) {
             return SereneSeasonsEntrypoint.shouldPlaceSnow(world, biomeCheckPos)

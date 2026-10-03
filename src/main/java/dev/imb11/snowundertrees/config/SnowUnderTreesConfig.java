@@ -16,12 +16,18 @@ import dev.isxander.yacl3.config.v2.api.SerialEntry;
 import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class SnowUnderTreesConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger("SnowUnderTrees/Config");
     private static final ConfigHelper CONFIG_HELPER = new ConfigHelper("snowundertrees", "config");
     public static ConfigClassHandler<SnowUnderTreesConfig> CONFIG_CLASS_HANDLER = ConfigClassHandler
             .createBuilder(SnowUnderTreesConfig.class)
@@ -113,6 +119,8 @@ public class SnowUnderTreesConfig {
             "snowbound:boreal_forest"
     );
 
+    private transient volatile Set<Identifier> supportedBiomeIds = parseSupportedBiomes();
+
     @SerialEntry
     public boolean respectSeasonMods = true;
     @SerialEntry
@@ -120,6 +128,32 @@ public class SnowUnderTreesConfig {
 
     public static SnowUnderTreesConfig get() {
         return CONFIG_CLASS_HANDLER.instance();
+    }
+
+    public boolean supportsBiome(Identifier biomeId) {
+        return supportedBiomeIds.contains(biomeId);
+    }
+
+    private Set<Identifier> parseSupportedBiomes() {
+        Set<Identifier> ids = new HashSet<>();
+        if (supportedBiomes == null) {
+            LOGGER.error("supportedBiomes must be a list of biome IDs; no configured biomes will be enabled");
+            return Set.of();
+        }
+        for (String value : supportedBiomes) {
+            Identifier id = value == null ? null : Identifier.tryParse(value);
+            if (id == null) {
+                LOGGER.error("Invalid biome ID '{}' in supportedBiomes; ignoring this entry", value);
+            } else {
+                ids.add(id);
+            }
+        }
+        return Set.copyOf(ids);
+    }
+
+    private void setSupportedBiomes(List<String> biomes) {
+        supportedBiomes = biomes;
+        supportedBiomeIds = parseSupportedBiomes();
     }
 
     public static void load() {
@@ -133,6 +167,7 @@ public class SnowUnderTreesConfig {
         }
 
         CONFIG_CLASS_HANDLER.load();
+        get().supportedBiomeIds = get().parseSupportedBiomes();
     }
 
     public static YetAnotherConfigLib getInstance() {
@@ -146,7 +181,7 @@ public class SnowUnderTreesConfig {
                     .description(CONFIG_HELPER.get("supportedBiomes", false))
                     .controller(StringControllerBuilder::create)
                     .initial("minecraft:plains")
-                    .binding(defaults.supportedBiomes, () -> config.supportedBiomes, (v) -> config.supportedBiomes = v)
+                    .binding(defaults.supportedBiomes, () -> config.supportedBiomes, config::setSupportedBiomes)
                     .build();
 
             var enableBiomeFeatureOption = Option.<Boolean>createBuilder()
