@@ -41,7 +41,8 @@ public class SnowUnderTreesFeature implements Feature {
             }
         }
 
-        // Iterate within a 16x16 area around the feature origin
+        BlockPos.MutableBlockPos currentPos = new BlockPos.MutableBlockPos();
+        BlockPos.MutableBlockPos belowPos = new BlockPos.MutableBlockPos();
         for (int xOffset = 0; xOffset < 16; xOffset++) {
             for (int zOffset = 0; zOffset < 16; zOffset++) {
                 int x = origin.getX() + xOffset;
@@ -49,7 +50,7 @@ public class SnowUnderTreesFeature implements Feature {
 
                 // Find top surfaces
                 int y = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z) - 1;
-                BlockPos currentPos = new BlockPos(x, y, z);
+                currentPos.set(x, y, z);
 
                 // Early exit if not leaves
                 if (!(world.getBlockState(currentPos).getBlock() instanceof LeavesBlock)) {
@@ -58,7 +59,7 @@ public class SnowUnderTreesFeature implements Feature {
 
                 // Find ground below leaves
                 y = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
-                currentPos = currentPos.atY(y);
+                currentPos.setY(y);
 
                 // Biome check for snow suitability
                 Biome biome = world.getBiome(currentPos).value();
@@ -69,7 +70,7 @@ public class SnowUnderTreesFeature implements Feature {
                 // Snow placement
                 world.setBlock(currentPos, Blocks.SNOW.defaultBlockState(), 2);
 
-                BlockPos belowPos = currentPos.below();
+                belowPos.set(x, y - 1, z);
                 BlockState belowState = world.getBlockState(belowPos);
                 if (belowState.hasProperty(SnowyBlock.SNOWY)) {
                     world.setBlock(belowPos, belowState.setValue(SnowyBlock.SNOWY, true), 2);
