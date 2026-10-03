@@ -1,13 +1,29 @@
 package dev.imb11.snowundertrees.world;
 
-import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 final class TrackedChunkPositions {
-    private final LongLinkedOpenHashSet positions = new LongLinkedOpenHashSet();
+    private final LongArrayList positions = new LongArrayList();
+    private final LongOpenHashSet loadedPositions = new LongOpenHashSet();
+    private int cursor;
 
     void setLoaded(long position, boolean loaded) {
-        if (loaded) positions.add(position);
-        else positions.remove(position);
+        if (loaded) {
+            if (!loadedPositions.add(position)) return;
+            if (cursor == 0) {
+                positions.add(position);
+            } else {
+                positions.add(cursor, position);
+                cursor++;
+            }
+        } else {
+            if (!loadedPositions.remove(position)) return;
+            int index = positions.indexOf(position);
+            positions.removeLong(index);
+            if (index < cursor) cursor--;
+            if (cursor == positions.size()) cursor = 0;
+        }
     }
 
     int size() {
@@ -15,8 +31,8 @@ final class TrackedChunkPositions {
     }
 
     long next() {
-        long position = positions.firstLong();
-        positions.addAndMoveToLast(position);
+        long position = positions.getLong(cursor++);
+        if (cursor == positions.size()) cursor = 0;
         return position;
     }
 }

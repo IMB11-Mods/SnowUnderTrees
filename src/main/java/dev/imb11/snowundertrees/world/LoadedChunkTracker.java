@@ -29,9 +29,20 @@ public final class LoadedChunkTracker {
             var positions = WORLDS.get(world);
             if (positions != null) positions.setLoaded(chunk.getPos().pack(), false);
         });
-        ServerLevelEvents.UNLOAD.register((server, world) -> WORLDS.remove(world));
+        ServerLevelEvents.UNLOAD.register((server, world) -> {
+            var positions = WORLDS.remove(world);
+            if (positions != null && positions.diagnostics != null) positions.diagnostics.report(world);
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(server ->
-                WORLDS.keySet().removeIf(world -> world.getServer() == server));
+                WORLDS.entrySet().removeIf(entry -> {
+                    if (entry.getKey().getServer() != server) return false;
+                    if (entry.getValue().diagnostics != null) entry.getValue().diagnostics.report(entry.getKey());
+                    return true;
+                }));
+    }
+
+    static SnowDiagnostics diagnostics(ServerLevel world) {
+        return WORLDS.computeIfAbsent(world, ignored -> new WorldChunks()).diagnostics;
     }
 
     public static void processTick(ServerLevel world, boolean snowfall, int meltInterval, int limit,
@@ -41,6 +52,7 @@ public final class LoadedChunkTracker {
         }
         var positions = WORLDS.get(world);
         if (positions == null) return;
+        SnowDiagnostics diagnostics = SnowDiagnostics.ENABLED ? positions.diagnostics : null;
         long tick = world.getGameTime();
         if (positions.lastTick == tick) return;
         positions.lastTick = tick;
@@ -62,6 +74,7 @@ public final class LoadedChunkTracker {
         long allowance = limit <= 0 ? Long.MAX_VALUE : limit;
         var chunkMap = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
         while (allowance > 0) {
+            long started = diagnostics == null ? 0 : diagnostics.beginVisit();
             snowRemaining = Math.min(snowRemaining, positions.loaded.size());
             int meltBucket = meltInterval > 0 ? positions.nextMeltingBucket() : -1;
             boolean snowWaiting = snowRemaining > 0;
@@ -80,21 +93,46 @@ public final class LoadedChunkTracker {
             }
             positions.meltNext = !melt;
             allowance--;
-            processEntityTickingChunk(chunkMap, position, melt ? meltAction : snowAction);
+            if (diagnostics != null) {
+                diagnostics.endStage(SnowDiagnostics.Stage.SCHEDULING, started);
+                diagnostics.count(melt ? SnowDiagnostics.Counter.MELT_VISITS : SnowDiagnostics.Counter.SNOW_VISITS);
+            }
+            if (!melt) {
+                started = diagnostics == null ? 0 : diagnostics.startStage();
+                boolean process = world.getRandom().nextInt(4) == 0;
+                if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.RANDOM_CHECK, started);
+                if (!process) {
+                    if (diagnostics != null) diagnostics.count(SnowDiagnostics.Counter.RANDOM_REJECTED);
+                    continue;
+                }
+                if (diagnostics != null) diagnostics.count(SnowDiagnostics.Counter.SNOW_READINESS_CHECKS);
+            }
+            started = diagnostics == null ? 0 : diagnostics.startStage();
+            LevelChunk chunk = getEntityTickingChunk(chunkMap, position);
+            if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.CHUNK_READINESS, started);
+            if (chunk == null) continue;
+            if (diagnostics != null) {
+                diagnostics.count(melt ? SnowDiagnostics.Counter.MELT_READY : SnowDiagnostics.Counter.SNOW_READY);
+            }
+            if (melt) {
+                started = diagnostics == null ? 0 : diagnostics.startStage();
+                meltAction.accept(chunk);
+                if (diagnostics != null) diagnostics.endStage(SnowDiagnostics.Stage.MELTING, started);
+            } else {
+                snowAction.accept(chunk);
+            }
         }
     }
 
-    private static void processEntityTickingChunk(ThreadedAnvilChunkStorageInvoker chunkMap, long position,
-                                                  Consumer<LevelChunk> action) {
+    private static LevelChunk getEntityTickingChunk(ThreadedAnvilChunkStorageInvoker chunkMap, long position) {
         ChunkHolder holder = chunkMap.invokeGetVisibleChunkIfPresent(position);
-        if (holder == null) return;
+        if (holder == null) return null;
         var result = holder.getEntityTickingChunkFuture().getNow(ChunkHolder.UNLOADED_LEVEL_CHUNK);
-        if (!result.isSuccess()) return;
-        LevelChunk chunk = result.orElse(null);
-        if (chunk != null) action.accept(chunk);
+        return result.isSuccess() ? result.orElse(null) : null;
     }
 
     private static final class WorldChunks {
+        private final SnowDiagnostics diagnostics = SnowDiagnostics.ENABLED ? new SnowDiagnostics() : null;
         private final TrackedChunkPositions loaded = new TrackedChunkPositions();
         private final TrackedChunkPositions[] melting = new TrackedChunkPositions[MELT_PHASE_COUNT];
         private final int[] pendingMelting = new int[MELT_PHASE_COUNT];
