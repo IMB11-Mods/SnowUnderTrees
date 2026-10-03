@@ -10,6 +10,7 @@ import dev.isxander.yacl3.api.ListOption;
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
+import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.config.v2.api.ConfigClassHandler;
 import dev.isxander.yacl3.config.v2.api.SerialEntry;
@@ -43,6 +44,9 @@ public class SnowUnderTreesConfig {
 
     @SerialEntry
     public boolean enableWhenSnowing = true;
+
+    @SerialEntry
+    public int maxChunkVisitsPerTick = 0;
 
     @SerialEntry
     public List<String> supportedBiomes = List.of(
@@ -191,9 +195,18 @@ public class SnowUnderTreesConfig {
                     .controller(opt -> BooleanControllerBuilder.create(opt).yesNoFormatter().coloured(true))
                     .build();
 
+            var maxChunkVisitsOption = Option.<Integer>createBuilder()
+                    .name(CONFIG_HELPER.getText(EntryType.OPTION_NAME, "maxChunkVisitsPerTick"))
+                    .description(CONFIG_HELPER.get("maxChunkVisitsPerTick", false))
+                    .binding(defaults.maxChunkVisitsPerTick, () -> config.maxChunkVisitsPerTick,
+                            value -> config.maxChunkVisitsPerTick = Math.max(0, value))
+                    .controller(option -> IntegerFieldControllerBuilder.create(option).min(0))
+                    .build();
+
             var options = new ArrayList<Option<?>>(List.of(
                     enableBiomeFeatureOption,
-                    enableWhenSnowingOption
+                    enableWhenSnowingOption,
+                    maxChunkVisitsOption
             ));
 
             if (SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {

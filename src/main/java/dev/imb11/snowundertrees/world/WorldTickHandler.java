@@ -18,17 +18,12 @@ public class WorldTickHandler implements ServerTickEvents.StartLevelTick {
     @Override
     public void onStartTick(ServerLevel world) {
 
-        if (SnowUnderTreesConfig.get().respectSeasonMods
-                && SnowUnderTreesConfig.get().meltSnowSeasonally
-                && SereneSeasonsEntrypoint.isSereneSeasonsLoaded) {
-            SereneSeasonsEntrypoint.attemptMeltSnow(world);
-        }
-
-        if (!SnowUnderTreesConfig.get().enableWhenSnowing || !world.isRaining()) {
-            return;
-        }
-
-        LoadedChunkTracker.forEachEntityTickingChunk(world, chunk -> processChunk(world, chunk));
+        var config = SnowUnderTreesConfig.get();
+        boolean snowfall = config.enableWhenSnowing && world.isRaining();
+        int meltInterval = SereneSeasonsEntrypoint.getMeltingInterval(world);
+        LoadedChunkTracker.processTick(world, snowfall, meltInterval, config.maxChunkVisitsPerTick,
+                chunk -> processChunk(world, chunk),
+                chunk -> SereneSeasonsEntrypoint.meltSnowInChunk(world, chunk));
     }
 
     private void processChunk(ServerLevel world, LevelChunk chunk) {

@@ -9,6 +9,7 @@ import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.LevelChunk;
 
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -33,29 +34,53 @@ public final class LoadedChunkTracker {
                 WORLDS.keySet().removeIf(world -> world.getServer() == server));
     }
 
-    public static void forEachEntityTickingChunk(ServerLevel world, Consumer<LevelChunk> action) {
-        var positions = WORLDS.get(world);
-        if (positions == null) return;
-
-        var chunkMap = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
-        positions.loaded.forEach(position -> processEntityTickingChunk(chunkMap, position, action));
-    }
-
-    public static void forEachDueMeltingChunk(ServerLevel world, int interval, Consumer<LevelChunk> action) {
-        if (interval <= 0 || MELT_PHASE_COUNT % interval != 0) {
-            throw new IllegalArgumentException("Unsupported melting interval: " + interval);
+    public static void processTick(ServerLevel world, boolean snowfall, int meltInterval, int limit,
+                                   Consumer<LevelChunk> snowAction, Consumer<LevelChunk> meltAction) {
+        if (meltInterval < 0 || (meltInterval > 0 && MELT_PHASE_COUNT % meltInterval != 0)) {
+            throw new IllegalArgumentException("Unsupported melting interval: " + meltInterval);
         }
         var positions = WORLDS.get(world);
         if (positions == null) return;
-
         long tick = world.getGameTime();
-        if (positions.lastMeltTick == tick) return;
-        positions.lastMeltTick = tick;
+        if (positions.lastTick == tick) return;
+        positions.lastTick = tick;
 
+        if (meltInterval != positions.meltInterval || meltInterval == 0) {
+            Arrays.fill(positions.pendingMelting, 0);
+            positions.meltInterval = meltInterval;
+        }
+        if (meltInterval > 0) {
+            int phase = (int) Math.floorMod(tick, (long) meltInterval);
+            for (int bucket = phase; bucket < MELT_PHASE_COUNT; bucket += meltInterval) {
+                if (positions.pendingMelting[bucket] == 0) {
+                    positions.pendingMelting[bucket] = positions.melting[bucket].size();
+                }
+            }
+        }
+
+        int snowRemaining = snowfall ? positions.loaded.size() : 0;
+        long allowance = limit <= 0 ? Long.MAX_VALUE : limit;
         var chunkMap = (ThreadedAnvilChunkStorageInvoker) world.getChunkSource().chunkMap;
-        int phase = (int) Math.floorMod(tick, (long) interval);
-        for (int bucket = phase; bucket < MELT_PHASE_COUNT; bucket += interval) {
-            positions.melting[bucket].forEach(position -> processEntityTickingChunk(chunkMap, position, action));
+        while (allowance > 0) {
+            snowRemaining = Math.min(snowRemaining, positions.loaded.size());
+            int meltBucket = positions.nextMeltingBucket();
+            boolean snowWaiting = snowRemaining > 0;
+            boolean meltWaiting = meltBucket >= 0;
+            if (!snowWaiting && !meltWaiting) break;
+
+            boolean melt = meltWaiting && (!snowWaiting || positions.meltNext);
+            long position;
+            if (melt) {
+                position = positions.melting[meltBucket].next();
+                positions.pendingMelting[meltBucket]--;
+                positions.nextMeltBucket = (meltBucket + 1) % MELT_PHASE_COUNT;
+            } else {
+                position = positions.loaded.next();
+                snowRemaining--;
+            }
+            positions.meltNext = !melt;
+            allowance--;
+            processEntityTickingChunk(chunkMap, position, melt ? meltAction : snowAction);
         }
     }
 
@@ -72,12 +97,25 @@ public final class LoadedChunkTracker {
     private static final class WorldChunks {
         private final TrackedChunkPositions loaded = new TrackedChunkPositions();
         private final TrackedChunkPositions[] melting = new TrackedChunkPositions[MELT_PHASE_COUNT];
-        private long lastMeltTick = Long.MIN_VALUE;
+        private final int[] pendingMelting = new int[MELT_PHASE_COUNT];
+        private long lastTick = Long.MIN_VALUE;
+        private int meltInterval;
+        private int nextMeltBucket;
+        private boolean meltNext = true;
 
         private WorldChunks() {
             for (int i = 0; i < melting.length; i++) {
                 melting[i] = new TrackedChunkPositions();
             }
+        }
+
+        private int nextMeltingBucket() {
+            for (int offset = 0; offset < MELT_PHASE_COUNT; offset++) {
+                int bucket = (nextMeltBucket + offset) % MELT_PHASE_COUNT;
+                pendingMelting[bucket] = Math.min(pendingMelting[bucket], melting[bucket].size());
+                if (pendingMelting[bucket] > 0) return bucket;
+            }
+            return -1;
         }
 
         private void setLoaded(long position, boolean isLoaded) {

@@ -2,7 +2,6 @@
 package dev.imb11.snowundertrees.compat;
 
 import dev.imb11.snowundertrees.config.SnowUnderTreesConfig;
-import dev.imb11.snowundertrees.world.LoadedChunkTracker;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -50,17 +49,14 @@ public class SereneSeasonsEntrypoint {
         isSereneSeasonsLoaded = true;
     }
 
-    public static void attemptMeltSnow(ServerLevel serverWorld) {
+    public static int getMeltingInterval(ServerLevel serverWorld) {
         if (!SnowUnderTreesConfig.get().meltSnowSeasonally
                 || !isSeasonIntegrationEnabled(serverWorld)
-                || !ModConfig.seasons.generateSnowAndIce) return;
-        int interval = meltingInterval(SeasonHelper.getSeasonState(serverWorld).getSubSeason());
-        if (interval == 0) return;
-
-        LoadedChunkTracker.forEachDueMeltingChunk(serverWorld, interval, chunk -> meltSnowInChunk(serverWorld, chunk));
+                || !ModConfig.seasons.generateSnowAndIce) return 0;
+        return meltingInterval(SeasonHelper.getSeasonState(serverWorld).getSubSeason());
     }
 
-    private static void meltSnowInChunk(ServerLevel serverWorld, LevelChunk chunk) {
+    public static void meltSnowInChunk(ServerLevel serverWorld, LevelChunk chunk) {
         if (!serverWorld.shouldTickBlocksAt(chunk.getPos().getWorldPosition())) return;
 
         BlockPos randomPosition = serverWorld.getBlockRandomPos(chunk.getPos().getMinBlockX(), 0, chunk.getPos().getMinBlockZ(), 15);

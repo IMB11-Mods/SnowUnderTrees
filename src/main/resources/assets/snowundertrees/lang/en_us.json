@@ -1,6 +1,8 @@
 {
   "modmenu.descriptionTranslation.snowundertrees": "Adds snow under trees in snowy biomes.",
   "snowundertrees.config.title": "Snow Under Trees Config",
+  "snowundertrees.config.option.maxChunkVisitsPerTick": "Snow Update Limit",
+  "snowundertrees.config.option.description.maxChunkVisitsPerTick": "Limit how much snow can be checked at once. Lower numbers may help reduce lag, but snow will spread and melt more slowly. Set to 0 for no limit (default).",
   "snowundertrees.config.option.enableBiomeFeature": "Enable Generation",
   "snowundertrees.config.option.description.enableBiomeFeature": "Add snow under trees in newly explored areas.",
   "snowundertrees.config.option.enableWhenSnowing": "Generate When Snowing",

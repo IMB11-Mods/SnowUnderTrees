@@ -12,6 +12,7 @@ You can adjust these settings in the mod's configuration screen:
 
 - **Enable Generation** (`enableBiomeFeature`) - Add snow under trees in newly explored areas.
 - **Generate When Snowing** (`enableWhenSnowing`) - Add snow under trees while it is snowing. Works even when Enable Generation is turned off.
+- **Snow Update Limit** (`maxChunkVisitsPerTick`) - Limit how much snow can be checked at once. Lower numbers may help reduce lag, but snow will spread and melt more slowly. Set to `0` for no limit (default).
 - **Respect Season Mods** (`respectSeasonMods`) - Let season mods influence when snow forms under trees, based on the time of year.
 - **Melt Snow Seasonally** (`meltSnowSeasonally`) - Let snow under trees melt as the seasons warm up. Requires a season mod and Respect Season Mods to be turned on.
 - **Supported Biomes** (`supportedBiomes`) - Biomes where snow can form under trees. Enter biome IDs, such as `minecraft:snowy_taiga`. Season mods can also allow snow in other biomes when it is cold enough.
