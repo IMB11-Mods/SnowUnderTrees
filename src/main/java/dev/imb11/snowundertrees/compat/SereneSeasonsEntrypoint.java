@@ -21,7 +21,6 @@ import sereneseasons.api.season.SeasonHelper;
 import sereneseasons.init.ModConfig;
 import sereneseasons.season.SeasonHooks;
 
-import java.util.HashMap;
 
 public class SereneSeasonsEntrypoint {
     private static final Logger LOGGER = LoggerFactory.getLogger("SnowUnderTrees/SereneSeasons");
@@ -55,9 +54,10 @@ public class SereneSeasonsEntrypoint {
         if (!SnowUnderTreesConfig.get().meltSnowSeasonally
                 || !isSeasonIntegrationEnabled(serverWorld)
                 || !ModConfig.seasons.generateSnowAndIce) return;
-        if (!shouldMeltSnow(serverWorld, SeasonHelper.getSeasonState(serverWorld).getSubSeason())) return;
+        int interval = meltingInterval(SeasonHelper.getSeasonState(serverWorld).getSubSeason());
+        if (interval == 0) return;
 
-        LoadedChunkTracker.forEachEntityTickingChunk(serverWorld, chunk -> meltSnowInChunk(serverWorld, chunk));
+        LoadedChunkTracker.forEachDueMeltingChunk(serverWorld, interval, chunk -> meltSnowInChunk(serverWorld, chunk));
     }
 
     private static void meltSnowInChunk(ServerLevel serverWorld, LevelChunk chunk) {
@@ -90,27 +90,16 @@ public class SereneSeasonsEntrypoint {
         }
     }
 
-    private static final HashMap<Object, Integer> MELT_CHANCES = new HashMap<>();
-
-    static {
-        if (FabricLoader.getInstance().isModLoaded("sereneseasons")) {
-            MELT_CHANCES.put(Season.SubSeason.EARLY_SPRING, 16);
-            MELT_CHANCES.put(Season.SubSeason.MID_SPRING, 12);
-            MELT_CHANCES.put(Season.SubSeason.LATE_SPRING, 8);
-            MELT_CHANCES.put(Season.SubSeason.EARLY_SUMMER, 4);
-            MELT_CHANCES.put(Season.SubSeason.MID_SUMMER, 2);
-            MELT_CHANCES.put(Season.SubSeason.LATE_SUMMER, 1);
-            MELT_CHANCES.put(Season.SubSeason.EARLY_AUTUMN, 8);
-            MELT_CHANCES.put(Season.SubSeason.MID_AUTUMN, 12);
-            MELT_CHANCES.put(Season.SubSeason.LATE_AUTUMN, 16);
-        }
-    }
-
-    private static boolean shouldMeltSnow(ServerLevel world, Season.SubSeason subSeason) {
-        int chance = MELT_CHANCES.getOrDefault(subSeason, -1);
-        if (chance == -1) return false;
-        var rnd = world.getRandom().nextInt(0, chance);
-        return rnd == 0;
+    private static int meltingInterval(Season.SubSeason subSeason) {
+        return switch (subSeason) {
+            case EARLY_SPRING, LATE_AUTUMN -> 16;
+            case MID_SPRING, MID_AUTUMN -> 12;
+            case LATE_SPRING, EARLY_AUTUMN -> 8;
+            case EARLY_SUMMER -> 4;
+            case MID_SUMMER -> 2;
+            case LATE_SUMMER -> 1;
+            default -> 0;
+        };
     }
 
     public static boolean isWinter(Level world) {
